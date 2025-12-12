@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoraRemover - Удаление водяных знаков AI (2025)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f9fafb;
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .drop-zone {
+            transition: all 0.3s ease;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .drop-zone:hover, .drop-zone.active {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .comparison-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .comparison-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .comparison-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            overflow: hidden;
+            border-right: 2px solid #fff;
+        }
+
+        #slider {
+            position: absolute;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            outline: none;
+            margin: 0;
+            cursor: ew-resize;
+            z-index: 10;
+        }
+
+        .floating-blob {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            filter: blur(80px);
+            opacity: 0.15;
+            border-radius: 50%;
+            z-index: -1;
+            animation: float 20s infinite alternate;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(100px, 100px); }
+        }
+
+        .modal-active {
+            overflow: hidden;
+        }
+
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="floating-blob top-[-100px] left-[-100px]"></div>
+    <div class="floating-blob bottom-[-100px] right-[-100px]" style="animation-delay: -10s; background: linear-gradient(to right, #ec4899, #8b5cf6);"></div>
+
+    <!-- Header -->
+    <nav class="fixed w-full z-50 px-6 py-4 flex justify-between items-center glass-card border-b border-white/5">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='/'">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fas fa-magic text-white"></i>
+            </div>
+            <span class="text-xl font-bold tracking-tighter">Sora<span class="text-blue-500">Remover</span></span>
+        </div>
+        <div class="hidden md:flex gap-8 text-sm font-medium text-gray-400">
+            <a href="#features" class="hover:text-white transition">Особенности</a>
+            <a href="#pricing" class="hover:text-white transition">Цены</a>
+            <a href="#faq" class="hover:text-white transition">FAQ</a>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="user-menu" class="hidden flex items-center gap-4">
+                <button onclick="toggleDashboard()" class="flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition">
+                    <i class="fas fa-user-circle text-blue-500"></i>
+                    <span id="nav-username" class="text-sm font-medium">Кабинет</span>
+                </button>
+                <button onclick="logout()" class="text-gray-400 hover:text-white text-sm"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <button id="login-btn" onclick="openAuthModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-semibold transition">
+                Войти
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content">
+        <!-- Hero Section -->
+        <section class="relative pt-32 pb-20 px-6 overflow-hidden">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+            
+            <div class="max-w-5xl mx-auto text-center relative z-10">
+                <span class="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold uppercase tracking-widest mb-6">
+                    Оптимизировано для 2025 года
+                </span>
+                <h1 class="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
+                    Чистые AI Видео <br>
+                    <span class="gradient-text">Без водяных знаков.</span>
+                </h1>
+                <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
+                    Удаляйте логотипы Sora, Kling и Runway за секунды. Сохраняйте 4K качество и идеальную детализацию.
+                </p>
+
+                <!-- Upload Area -->
+                <div id="upload-container" class="max-w-2xl mx-auto glass-card p-8 rounded-2xl shadow-2xl">
+                    <div id="drop-zone" class="drop-zone py-12 px-4 rounded-xl flex flex-col items-center justify-center cursor-pointer">
+                        <input type="file" id="fileInput" class="hidden" accept="video/*">
+                        <div id="upload-icon" class="mb-4 text-blue-500">
+                            <i class="fas fa-cloud-upload-alt text-5xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Загрузите видео</h3>
+                        <p class="text-gray-500 text-sm mb-6">MP4, MOV (Макс. 500МБ)</p>
+                        <button class="bg-white text-black px-8 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
+                            Выбрать файл
+                        </button>
+                    </div>
+
+                    <!-- Processing State -->
+                    <div id="processing-state" class="hidden py-12 flex flex-col items-center">
+                        <span class="loader mb-6"></span>
+                        <h3 class="text-xl font-semibold mb-2" id="status-text">Анализ кадров...</h3>
+                        <div class="w-full bg-gray-800 rounded-full h-2 mb-2 max-w-md">
+                            <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p id="percentage" class="text-blue-400 font-mono">0%</p>
+                    </div>
+
+                    <!-- Result State -->
+                    <div id="result-state" class="hidden py-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">Готово к скачиванию</h3>
+                            <span class="text-green-500 flex items-center gap-2 text-sm"><i class="fas fa-check-circle"></i> Обработано в 4K</span>
+                        </div>
+                        <div class="comparison-container mb-6">
+                            <img src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=1000" class="comparison-img" alt="Original">
+                            <div class="comparison-overlay" id="comparison-overlay">
+                                 <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1000" class="comparison-img" style="width: 200%; max-width: none;" alt="Processed">
+                                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <span class="bg-red-500 text-white px-2 py-1 text-xs rounded opacity-80 rotate-[-30deg]">WATERMARK</span>
+                                 </div>
+                            </div>
+                            <input type="range" min="0" max="100" value="50" id="slider">
+                        </div>
+                        <div class="flex gap-4">
+                            <button onclick="resetUpload()" class="flex-1 border border-white/10 hover:bg-white/5 py-3 rounded-xl font-bold transition">Еще одно</button>
+                            <button onclick="downloadResult()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2">
+                                <i class="fas fa-download"></i> Скачать 
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="pricing" class="py-24 px-6 relative">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-5xl font-bold mb-4">Тарифные планы</h2>
+                    <p class="text-gray-400">Выберите подходящий уровень для ваших проектов.</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="glass-card p-8 rounded-3xl border border-white/5 flex flex-col hover:border-blue-500/30 transition shadow-xl">
+                        <h3 class="text-xl font-bold mb-2">Базовый</h3>
+                        <div class="text-4xl font-bold mb-6">490₽ <span class="text-sm text-gray-500 font-normal">/мес</span></div>
+                        <ul class="space-y-4 mb-8 flex-1 text-gray-400 text-sm">
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> 10 видео в месяц</li>
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> Качество Full HD</li>
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> Обычная поддержка</li>
+                        </ul>
+                        <button onclick="handlePayment('Базовый', 490)" class="w-full py-3 rounded-xl border border-white/10 hover:bg-white/5 transition font-bold">Выбрать</button>
+                    </div>
+
+                    <div class="glass-card p-8 rounded-3xl border-2 border-blue-500 flex flex-col relative scale-105 shadow-2xl shadow-blue-500/10">
+                        <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold uppercase">Популярный</div>
+                        <h3 class="text-xl font-bold mb-2">Профи</h3>
+                        <div class="text-4xl font-bold mb-6">1 490₽ <span class="text-sm text-gray-500 font-normal">/мес</span></div>
+                        <ul class="space-y-4 mb-8 flex-1 text-gray-100 text-sm">
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> Безлимит видео</li>
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> Качество 4K Ultra HD</li>
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> Приоритет в очереди</li>
+                        </ul>
+                        <button onclick="handlePayment('Профи', 1490)" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 transition font-bold shadow-lg shadow-blue-600/20">Купить сейчас</button>
+                    </div>
+
+                    <div class="glass-card p-8 rounded-3xl border border-white/5 flex flex-col hover:border-blue-500/30 transition shadow-xl">
+                        <h3 class="text-xl font-bold mb-2">Студия</h3>
+                        <div class="text-4xl font-bold mb-6">4 990₽ <span class="text-sm text-gray-500 font-normal">/мес</span></div>
+                        <ul class="space-y-4 mb-8 flex-1 text-gray-400 text-sm">
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> API для бизнеса</li>
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> Пакетная загрузка</li>
+                            <li><i class="fas fa-check text-blue-500 mr-2"></i> Персональный менеджер</li>
+                        </ul>
+                        <button onclick="handlePayment('Студия', 4990)" class="w-full py-3 rounded-xl border border-white/10 hover:bg-white/5 transition font-bold">Связаться</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="py-24 px-6 bg-white/[0.01]">
+            <div class="max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold text-center mb-12">Частые вопросы</h2>
+                <div class="space-y-4">
+                    <div class="glass-card rounded-2xl overflow-hidden">
+                        <button class="w-full p-6 text-left flex justify-between items-center hover:bg-white/5 transition" onclick="toggleFaq(this)">
+                            <span class="font-semibold text-lg text-gray-200">Как это работает?</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div class="max-h-0 overflow-hidden transition-all duration-300 bg-white/5 px-6">
+                            <p class="py-4 text-gray-400">Мы используем продвинутые GAN-сети, обученные специально на датасетах Sora и Kling, чтобы дорисовывать пиксели под водяным знаком.</p>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl overflow-hidden">
+                        <button class="w-full p-6 text-left flex justify-between items-center hover:bg-white/5 transition" onclick="toggleFaq(this)">
+                            <span class="font-semibold text-lg text-gray-200">Какие методы оплаты доступны?</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div class="max-h-0 overflow-hidden transition-all duration-300 bg-white/5 px-6">
+                            <p class="py-4 text-gray-400">Мы принимаем российские карты через FreeKassa, СБП, а также криптовалюту для международных платежей.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Dashboard Content (Hidden by default) -->
+    <main id="dashboard-content" class="hidden pt-32 pb-20 px-6 max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-8">
+            <!-- Sidebar -->
+            <div class="w-full md:w-64 space-y-4">
+                <div class="glass-card p-6 rounded-2xl text-center">
+                    <div class="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user text-3xl text-blue-500"></i>
+                    </div>
+                    <h3 id="dash-username" class="font-bold text-lg">Пользователь</h3>
+                    <p id="dash-plan" class="text-blue-400 text-xs font-bold uppercase tracking-widest mt-1">Тариф: Бесплатный</p>
+                </div>
+                <nav class="space-y-2">
+                    <button onclick="showDashTab('history')" class="w-full text-left px-6 py-3 rounded-xl hover:bg-white/5 transition flex items-center gap-3">
+                        <i class="fas fa-history text-gray-500"></i> История видео
+                    </button>
+                    <button onclick="showDashTab('settings')" class="w-full text-left px-6 py-3 rounded-xl hover:bg-white/5 transition flex items-center gap-3">
+                        <i class="fas fa-cog text-gray-500"></i> Настройки
+                    </button>
+                    <button onclick="logout()" class="w-full text-left px-6 py-3 rounded-xl hover:bg-red-500/10 text-red-500 transition flex items-center gap-3">
+                        <i class="fas fa-sign-out-alt"></i> Выйти
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 space-y-6">
+                <div id="tab-history" class="tab-content active space-y-4">
+                    <h2 class="text-2xl font-bold">Ваша история</h2>
+                    <div id="history-list" class="grid gap-4">
+                        <!-- History items injected here -->
+                        <div class="glass-card p-12 text-center text-gray-500 rounded-2xl">
+                            <i class="fas fa-film text-4xl mb-4 opacity-20"></i>
+                            <p>У вас пока нет обработанных видео</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tab-settings" class="tab-content space-y-6">
+                    <h2 class="text-2xl font-bold">Настройки аккаунта</h2>
+                    <div class="glass-card p-8 rounded-2xl space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-2">Email</label>
+                            <input type="text" disabled value="user@example.com" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-500">
+                        </div>
+                        <button class="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-6 py-2 rounded-xl text-sm font-bold">Сменить пароль</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+        <div class="glass-card max-w-md w-full p-8 rounded-3xl relative animate-in fade-in zoom-in duration-300">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            
+            <div id="login-form" class="space-y-6">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold">С возвращением</h3>
+                    <p class="text-gray-400 text-sm mt-2">Войдите в свой аккаунт SoraRemover</p>
+                </div>
+                <div class="space-y-4">
+                    <input type="email" id="email" placeholder="Email" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition">
+                    <input type="password" id="password" placeholder="Пароль" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition">
+                    <button onclick="loginUser()" class="w-full py-4 bg-blue-600 rounded-xl font-bold hover:bg-blue-700 transition">Войти</button>
+                </div>
+                <p class="text-center text-sm text-gray-400">Нет аккаунта? <a href="#" onclick="toggleAuthMode()" class="text-blue-500">Создать сейчас</a></p>
+            </div>
+
+            <div id="register-form" class="hidden space-y-6">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold">Создать аккаунт</h3>
+                    <p class="text-gray-400 text-sm mt-2">Начните удалять водяные знаки бесплатно</p>
+                </div>
+                <div class="space-y-4">
+                    <input type="text" id="reg-name" placeholder="Имя" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition">
+                    <input type="email" id="reg-email" placeholder="Email" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition">
+                    <input type="password" id="reg-password" placeholder="Пароль" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition">
+                    <button onclick="registerUser()" class="w-full py-4 bg-blue-600 rounded-xl font-bold hover:bg-blue-700 transition">Зарегистрироваться</button>
+                </div>
+                <p class="text-center text-sm text-gray-400">Уже есть аккаунт? <a href="#" onclick="toggleAuthMode()" class="text-blue-500">Войти</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-12 border-t border-white/5 text-center text-gray-500">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex justify-center gap-8 mb-8 text-2xl">
+                <i class="fab fa-telegram-plane hover:text-white cursor-pointer transition"></i>
+                <i class="fab fa-discord hover:text-white cursor-pointer transition"></i>
+                <i class="fab fa-youtube hover:text-white cursor-pointer transition"></i>
+            </div>
+            <p class="mb-4">&copy; 2025 SoraRemover AI. Все права защищены. Не связано с OpenAI.</p>
+            <div class="flex justify-center gap-6 text-sm">
+                <a href="#" class="hover:text-white transition">Условия</a>
+                <a href="#" class="hover:text-white transition">Конфиденциальность</a>
+                <a href="#" class="hover:text-white transition">Поддержка</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // State Management
+        let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+        let userHistory = JSON.parse(localStorage.getItem('history')) || [];
+
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('fileInput');
+        const processingState = document.getElementById('processing-state');
+        const resultState = document.getElementById('result-state');
+        const progressBar = document.getElementById('progress-bar');
+        const percentageText = document.getElementById('percentage');
+        const statusText = document.getElementById('status-text');
+        const slider = document.getElementById('slider');
+        const overlay = document.getElementById('comparison-overlay');
+        const userMenu = document.getElementById('user-menu');
+        const loginBtn = document.getElementById('login-btn');
+
+        // Init App
+        updateAuthUI();
+
+        // Auth Logic
+        function openAuthModal() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            document.body.classList.add('modal-active');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+            document.body.classList.remove('modal-active');
+        }
+
+        function toggleAuthMode() {
+            document.getElementById('login-form').classList.toggle('hidden');
+            document.getElementById('register-form').classList.toggle('hidden');
+        }
+
+        function registerUser() {
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            if(!name || !email) return alert('Заполните поля');
+            
+            currentUser = { name, email, plan: 'Бесплатный' };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateAuthUI();
+            closeAuthModal();
+        }
+
+        function loginUser() {
+            const email = document.getElementById('email').value;
+            if(!email) return alert('Введите email');
+            
+            currentUser = { name: email.split('@')[0], email, plan: 'Бесплатный' };
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            updateAuthUI();
+            closeAuthModal();
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('user');
+            updateAuthUI();
+            window.location.reload();
+        }
+
+        function updateAuthUI() {
+            if (currentUser) {
+                userMenu.classList.remove('hidden');
+                loginBtn.classList.add('hidden');
+                document.getElementById('nav-username').innerText = currentUser.name;
+                document.getElementById('dash-username').innerText = currentUser.name;
+                document.getElementById('dash-plan').innerText = `Тариф: ${currentUser.plan}`;
+            } else {
+                userMenu.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
+            }
+        }
+
+        // Dashboard Navigation
+        function toggleDashboard() {
+            const main = document.getElementById('main-content');
+            const dash = document.getElementById('dashboard-content');
+            
+            if (dash.classList.contains('hidden')) {
+                main.classList.add('hidden');
+                dash.classList.remove('hidden');
+                renderHistory();
+                window.scrollTo(0,0);
+            } else {
+                main.classList.remove('hidden');
+                dash.classList.add('hidden');
+            }
+        }
+
+        function showDashTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        // File Processing
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('active'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('active');
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!currentUser) return openAuthModal();
+            
+            dropZone.parentElement.classList.add('hidden');
+            processingState.classList.remove('hidden');
+            simulateProcessing(file.name);
+        }
+
+        function simulateProcessing(fileName) {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    completeProcessing(fileName);
+                }
+                progressBar.style.width = `${progress}%`;
+                percentageText.innerText = `${Math.floor(progress)}%`;
+                
+                if (progress > 30 && progress < 60) statusText.innerText = 'Нейронная реконструкция...';
+                if (progress > 60 && progress < 90) statusText.innerText = 'Сохранение временной консистентности...';
+                if (progress > 90) statusText.innerText = 'Финальный рендеринг...';
+            }, 150);
+        }
+
+        function completeProcessing(fileName) {
+            processingState.classList.add('hidden');
+            resultState.classList.remove('hidden');
+            
+            // Add to history
+            const item = {
+                id: Date.now(),
+                name: fileName,
+                date: new Date().toLocaleDateString('ru-RU'),
+                status: 'Success'
+            };
+            userHistory.unshift(item);
+            localStorage.setItem('history', JSON.stringify(userHistory));
+        }
+
+        function resetUpload() {
+            resultState.classList.add('hidden');
+            document.getElementById('upload-container').querySelector('.drop-zone').parentElement.classList.remove('hidden');
+            progressBar.style.width = '0%';
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            if (userHistory.length === 0) return;
+            
+            list.innerHTML = userHistory.map(item => `
+                <div class="glass-card p-4 rounded-xl flex items-center justify-between hover:bg-white/5 transition">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-blue-600/20 rounded flex items-center justify-center">
+                            <i class="fas fa-check text-blue-500"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm truncate max-w-[200px]">${item.name}</div>
+                            <div class="text-xs text-gray-500">${item.date}</div>
+                        </div>
+                    </div>
+                    <button class="bg-white/5 hover:bg-white/10 p-2 rounded-lg text-xs font-bold transition">Скачать</button>
+                </div>
+            `).join('');
+        }
+
+        // FreeKassa Integration
+        function handlePayment(planName, price) {
+            if (!currentUser) return openAuthModal();
+            
+            // Данные FreeKassa
+            const merchantId = 'YOUR_MERCHANT_ID'; // Замените на ваш ID
+            const secretWord = 'YOUR_SECRET_1'; // Замените на ваш секрет
+            const orderId = 'SR_' + Date.now();
+            const currency = 'RUB';
+
+            const url = new URL('https://pay.freekassa.ru/');
+            url.searchParams.append('m', merchantId);
+            url.searchParams.append('oa', price);
+            url.searchParams.append('o', orderId);
+            url.searchParams.append('currency', currency);
+            url.searchParams.append('us_email', currentUser.email);
+            url.searchParams.append('us_plan', planName);
+
+            // Имитация формирования подписи и перехода
+            console.log(`Оплата через FreeKassa: ${planName} за ${price}₽`);
+            alert(`Перенаправляем в платежный шлюз FreeKassa...\nСумма: ${price} руб.\n\nПримечание: Для работы замените YOUR_MERCHANT_ID в коде.`);
+            
+            // window.location.href = url.toString();
+        }
+
+        // FAQ UI
+        function toggleFaq(btn) {
+            const content = btn.nextElementSibling;
+            const icon = btn.querySelector('.fa-chevron-down');
+            if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                content.style.maxHeight = '0px';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // Slider
+        slider.addEventListener('input', (e) => {
+            overlay.style.width = `${e.target.value}%`;
+        });
+
+        function downloadResult() {
+            alert('Ваше чистое видео 4K готово! Скачивание начнется автоматически.');
+        }
+
+        // Smooth Scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if(target) target.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
