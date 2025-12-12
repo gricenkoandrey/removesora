@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SoraRemover - Удаление водяных знаков AI (2025)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -130,7 +131,7 @@
 
     <!-- Header -->
     <nav class="fixed w-full z-50 px-6 py-4 flex justify-between items-center glass-card border-b border-white/5">
-        <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='/'">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="location.reload()">
             <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <i class="fas fa-magic text-white"></i>
             </div>
@@ -582,27 +583,39 @@
 
         // FreeKassa Integration
         function handlePayment(planName, price) {
-            if (!currentUser) return openAuthModal();
+            if (!currentUser) {
+                alert('Пожалуйста, сначала войдите в аккаунт');
+                return openAuthModal();
+            }
             
             // Данные FreeKassa
-            const merchantId = '90baed8043b326c094598a12d66d2168'; // Замените на ваш ID
-            const secretWord = 'YOUR_SECRET_1'; // Замените на ваш секрет
+            // ВНИМАНИЕ: Замените эти значения на ваши данные из личного кабинета FreeKassa
+            const merchantId = 'YOUR_MERCHANT_ID'; // Ваш ID (например, 12345)
+            const secretWord = 'YOUR_SECRET_1';     // Ваш Secret Word 1
             const orderId = 'SR_' + Date.now();
             const currency = 'RUB';
 
+            // Формирование подписи: md5(m:oa:s:currency:o)
+            const signatureStr = `${merchantId}:${price}:${secretWord}:${currency}:${orderId}`;
+            const signature = CryptoJS.MD5(signatureStr).toString();
+
             const url = new URL('https://pay.freekassa.ru/');
             url.searchParams.append('m', merchantId);
-            url.searchParams.append('oa', price);
+            url.searchParams.append('oa', price.toString());
             url.searchParams.append('o', orderId);
+            url.searchParams.append('s', signature);
             url.searchParams.append('currency', currency);
             url.searchParams.append('us_email', currentUser.email);
             url.searchParams.append('us_plan', planName);
 
-            // Имитация формирования подписи и перехода
-            console.log(`Оплата через FreeKassa: ${planName} за ${price}₽`);
-            alert(`Перенаправляем в платежный шлюз FreeKassa...\nСумма: ${price} руб.\n\nПримечание: Для работы замените YOUR_MERCHANT_ID в коде.`);
-            
-            // window.location.href = url.toString();
+            if (merchantId === 'YOUR_MERCHANT_ID') {
+                console.warn('FreeKassa: Merchant ID не настроен.');
+                alert(`Демо-режим оплаты:\nТариф: ${planName}\nСумма: ${price} руб.\n\nЧтобы оплата работала по-настоящему, вставьте ваш Merchant ID в коде сайта.`);
+                return;
+            }
+
+            // Переход на страницу оплаты
+            window.location.href = url.toString();
         }
 
         // FAQ UI
